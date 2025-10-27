@@ -107,6 +107,7 @@ nmc status                  # Show active machine and port mappings
 nmc check                   # Test if services are accessible locally
 nmc refresh                 # Regenerate and reload NGINX configuration
 nmc refetch                 # Update machine.json from remote source
+nmc break                   # Break connection from remote machine
 ```
 
 ### Example Workflow
@@ -125,12 +126,17 @@ nmc connect personal_home_pc_ubuntu
 nmc check
 
 # 5. Update configuration from remote
-nmc refetch personal_home_pc_ubuntu
+nmc refetch
 nmc refresh
 
 # 6. Switch to cloud machine
 nmc connect gcp_lowCost_instance
 nmc check
+
+# 6. Stop/Break this connection
+nmc stop
+nmc check
+nmc status
 ```
 
 ### Service Health Checking
