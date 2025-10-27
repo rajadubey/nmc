@@ -16,14 +16,24 @@ All configuration is **stored in `~/.nmc`** and can be customized via `.bashrc` 
 
 ---
 
+### One-line Install
+```bash
+curl -o- https://raw.githubusercontent.com/rajadubey/nmc/master/install.sh | bash
+```
+
 ## Installation
 
 ```bash
-mkdir -p ~/.nmc
-nano ~/.nmc/nmc   # Paste script content
+# Download the script
+curl -fsSL -o ~/.nmc/nmc https://raw.githubusercontent.com/rajadubey/nmc/master/nmc
+
+# Make it executable
 chmod +x ~/.nmc/nmc
+
+# Create symlink (may require sudo)
 sudo ln -sf ~/.nmc/nmc /usr/local/bin/nmc
 ```
+
 
 ### Dependencies
 
