@@ -4,7 +4,7 @@
 # NMC - NGINX Machine Configurator
 # ===========================
 
-VERSION=1.0.0
+VERSION=1.1.0
 
 NMC_HOME="$HOME/.nmc"
 CONF_PATH="$NMC_HOME/machine.json"
@@ -234,6 +234,20 @@ cmd_check() {
 }
 
 cmd_refresh() {
+  local withConfig=true
+  # Parse flags
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      --no-withConfig)
+        withConfig=false
+        shift
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
+
   active=$(get_active)
   [ -z "$active" ] && { err "No active machine"; exit 1; }
   [ ! -f "$CONF_PATH" ] && { err "machine.json not found"; exit 1; }
@@ -243,19 +257,28 @@ cmd_refresh() {
 
   log "Generating NGINX config for $active ($ip)"
   {
+    # Always generate the header comment
     echo "# Auto-generated remote.conf for $active ($ip) [$(date '+%Y-%m-%d %H:%M:%S')]"
-    for s in $services; do
-      local_port=$(jq -r ".\"$active\".services.\"$s\".local" "$CONF_PATH")
-      remote_port=$(jq -r ".\"$active\".services.\"$s\".remote" "$CONF_PATH")
-      echo
-      echo "upstream $s {"
-      echo "    server $ip:$remote_port;"
-      echo "}"
-      echo "server {"
-      echo "    listen $local_port;"
-      echo "    proxy_pass $s;"
-      echo "}"
-    done
+    
+    # Only generate service configs if withConfig is true
+    if [ "$withConfig" = true ]; then
+      for s in $services; do
+        local_port=$(jq -r ".\"$active\".services.\"$s\".local" "$CONF_PATH")
+        remote_port=$(jq -r ".\"$active\".services.\"$s\".remote" "$CONF_PATH")
+        
+        # Only add config if ports are valid
+        if [ -n "$local_port" ] && [ "$local_port" != "null" ] && [ -n "$remote_port" ] && [ "$remote_port" != "null" ]; then
+          echo
+          echo "upstream $s {"
+          echo "    server $ip:$remote_port;"
+          echo "}"
+          echo "server {"
+          echo "    listen $local_port;"
+          echo "    proxy_pass $s;"
+          echo "}"
+        fi
+      done
+    fi
   } > "$TMP_CONF"
 
   local conf_dir
@@ -299,6 +322,13 @@ cmd_refetch() {
   cmd_refresh
 }
 
+cmd_break() {
+  cmd_refresh --no-withConfig
+  #delete active file
+  rm -rf "$ACTIVE_FILE"
+}
+
+
 # ---------- CLI Dispatcher ----------
 
 cmd="$1"; shift || true
@@ -309,6 +339,7 @@ case "$cmd" in
   status) cmd_status ;;
   check) cmd_check ;;
   refresh) cmd_refresh ;;
+  break) cmd_break ;;
   refetch) cmd_refetch "$@" ;;
   *)
     echo "Usage: nmc <command>"
@@ -320,6 +351,7 @@ case "$cmd" in
     echo "  status                   Show active machine and ports"
     echo "  check                    Curl-check services on localhost"
     echo "  refresh                  Generate & reload remote.conf"
+    echo "  break                    Break connection from machine"
     echo "  refetch                  Fetch machine.json via SSH using env variable"
     echo
     ok "-------------------------\nversion:$VERSION\n-------------------------"
