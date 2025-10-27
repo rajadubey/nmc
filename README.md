@@ -1,6 +1,3 @@
-I'll create the complete README.md file for you:
-
-```markdown
 # NMC — NGINX Machine Configurator (Bash CLI)
 
 ## Overview
