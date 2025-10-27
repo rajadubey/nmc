@@ -4,7 +4,7 @@
 # LOKI - NGINX Machine Configurator
 # ===========================
 
-VERSION=1.1.0
+VERSION=1.0.0
 
 LOKI_HOME="$HOME/.loki"
 CONF_PATH="$LOKI_HOME/machine.json"
