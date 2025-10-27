@@ -3,7 +3,7 @@
 { # this ensures the entire script is downloaded #
 
 LOKI_INSTALL_DIR="${LOKI_DIR:-$HOME/.loki}"
-LOKI_REPO="rajadubey/nmc"
+LOKI_REPO="rajadubey/loki"
 LOKI_RAW_URL="https://raw.githubusercontent.com/$LOKI_REPO/master/loki"
 
 # Colors for output
