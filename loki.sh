@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 
 # ===========================
-# NMC - NGINX Machine Configurator
+# LOKI - NGINX Machine Configurator
 # ===========================
 
 VERSION=1.1.0
 
-NMC_HOME="$HOME/.nmc"
-CONF_PATH="$NMC_HOME/machine.json"
-ACTIVE_FILE="$NMC_HOME/active"
-TMP_CONF="$NMC_HOME/remote.conf"
-LOG_FILE="$NMC_HOME/nmc.log"
+LOKI_HOME="$HOME/.loki"
+CONF_PATH="$LOKI_HOME/machine.json"
+ACTIVE_FILE="$LOKI_HOME/active"
+TMP_CONF="$LOKI_HOME/remote.conf"
+LOG_FILE="$LOKI_HOME/loki.log"
 
-mkdir -p "$NMC_HOME"
+mkdir -p "$LOKI_HOME"
 
 # ---------- Colors ----------
 GREEN="\033[1;32m"
@@ -21,7 +21,7 @@ YELLOW="\033[1;33m"
 BLUE="\033[1;34m"
 RESET="\033[0m"
 
-log() { echo -e "${BLUE}[nmc]${RESET} $1"; echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"; }
+log() { echo -e "${BLUE}[loki]${RESET} $1"; echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"; }
 ok() { echo -e "${GREEN}$1${RESET}"; }
 warn() { echo -e "${YELLOW}$1${RESET}"; }
 err() { echo -e "${RED}$1${RESET}" >&2; }
@@ -72,16 +72,16 @@ detect_nginx_conf_dir() {
 # ---------- Commands ----------
 
 cmd_init() {
-  log "Initializing NMC home at $NMC_HOME"
+  log "Initializing LOKI home at $LOKI_HOME"
 
   cmd_refetch
 
   touch "$LOG_FILE"
-  ok "✅ NMC initialized successfully."
+  ok "✅ LOKI initialized successfully."
 }
 
 cmd_ls() {
-  [ ! -f "$CONF_PATH" ] && { err "machine.json not found. Run 'nmc init' first."; exit 1; }
+  [ ! -f "$CONF_PATH" ] && { err "machine.json not found. Run 'loki init' first."; exit 1; }
   active=$(get_active)
   echo "Available machines:"
   jq -r 'keys[]' "$CONF_PATH" | while read -r key; do
@@ -96,8 +96,8 @@ cmd_ls() {
 cmd_connect() {
   echo "DEBUG: cmd_connect called with argument: '$1'"
   local name="$1"
-  [ -z "$name" ] && { err "Usage: nmc connect <machine>"; exit 1; }
-  [ ! -f "$CONF_PATH" ] && { err "machine.json not found. Run 'nmc init' first."; exit 1; }
+  [ -z "$name" ] && { err "Usage: loki connect <machine>"; exit 1; }
+  [ ! -f "$CONF_PATH" ] && { err "machine.json not found. Run 'loki init' first."; exit 1; }
   
   log "Attempting to connect to machine: $name"
   log "Checking if machine exists in config..."
@@ -311,10 +311,10 @@ cmd_refresh() {
 }
 
 cmd_refetch() {
-  ssh_user="${NMC_SSH_USER:-root}"
-  ssh_host="${NMC_SSH_HOST:?Please set NMC_SSH_HOST in .bashrc/.zshrc}"
-  ssh_port="${NMC_SSH_PORT:-22}"
-  remote_path="${NMC_REMOTE_MACHINES_JSON:-/mnt/machines.json}"
+  ssh_user="${LOKI_SSH_USER:-root}"
+  ssh_host="${LOKI_SSH_HOST:?Please set LOKI_SSH_HOST in .bashrc/.zshrc}"
+  ssh_port="${LOKI_SSH_PORT:-22}"
+  remote_path="${LOKI_REMOTE_MACHINES_JSON:-/mnt/machines.json}"
 
   log "Fetching machines.json from $ssh_user@$ssh_host:$remote_path ..."
   scp -P "$ssh_port" "$ssh_user@$ssh_host:$remote_path" "$CONF_PATH"
@@ -342,10 +342,10 @@ case "$cmd" in
   break) cmd_break ;;
   refetch) cmd_refetch "$@" ;;
   *)
-    echo "Usage: nmc <command>"
+    echo "Usage: loki <command>"
     echo
     echo "Commands:"
-    echo "  init                     Initialize ~/.nmc"
+    echo "  init                     Initialize ~/.loki"
     echo "  ls                       List all machines"
     echo "  connect <machine>         Set active machine"
     echo "  status                   Show active machine and ports"

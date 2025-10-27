@@ -2,7 +2,7 @@
 
 { # this ensures the entire script is downloaded #
 
-NMC_INSTALL_DIR="${NMC_DIR:-$HOME/.nmc}"
+LOKI_INSTALL_DIR="${LOKI_DIR:-$HOME/.loki}"
 
 # Colors
 RED='\033[0;31m'
@@ -16,7 +16,7 @@ warn() { log "${YELLOW}⚠️ $1${NC}"; }
 err() { log "${RED}❌ $1${NC}" >&2; }
 
 remove_symlink() {
-    local symlinks=("/usr/local/bin/nmc" "/usr/bin/nmc")
+    local symlinks=("/usr/local/bin/loki" "/usr/bin/loki")
     
     for symlink in "${symlinks[@]}"; do
         if [ -L "$symlink" ]; then
@@ -35,39 +35,39 @@ remove_from_profile() {
     local profile_files=("$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile" "$HOME/.zshrc")
     
     for profile in "${profile_files[@]}"; do
-        if [ -f "$profile" ] && grep -q "NMC_DIR" "$profile" 2>/dev/null; then
+        if [ -f "$profile" ] && grep -q "LOKI_DIR" "$profile" 2>/dev/null; then
             # Create backup
-            cp "$profile" "$profile.nmc-backup" 2>/dev/null
-            # Remove nmc lines
-            sed -i.bak '/NMC - NGINX Machine Configurator/,/export PATH=.*nmc/d' "$profile" 2>/dev/null
-            sed -i.bak '/NMC_DIR/d' "$profile" 2>/dev/null
+            cp "$profile" "$profile.loki-backup" 2>/dev/null
+            # Remove loki lines
+            sed -i.bak '/LOKI - NGINX Machine Configurator/,/export PATH=.*loki/d' "$profile" 2>/dev/null
+            sed -i.bak '/LOKI_DIR/d' "$profile" 2>/dev/null
             rm -f "$profile.bak" 2>/dev/null
-            ok "Removed nmc configuration from $profile"
+            ok "Removed loki configuration from $profile"
         fi
     done
 }
 
 remove_installation_dir() {
-    if [ -d "$NMC_INSTALL_DIR" ]; then
-        if rm -rf "$NMC_INSTALL_DIR"; then
-            ok "Removed installation directory: $NMC_INSTALL_DIR"
+    if [ -d "$LOKI_INSTALL_DIR" ]; then
+        if rm -rf "$LOKI_INSTALL_DIR"; then
+            ok "Removed installation directory: $LOKI_INSTALL_DIR"
         else
-            err "Failed to remove installation directory: $NMC_INSTALL_DIR"
+            err "Failed to remove installation directory: $LOKI_INSTALL_DIR"
         fi
     else
-        warn "Installation directory not found: $NMC_INSTALL_DIR"
+        warn "Installation directory not found: $LOKI_INSTALL_DIR"
     fi
 }
 
 main() {
     echo
-    echo "NMC - NGINX Machine Configurator Uninstaller"
+    echo "LOKI - NGINX Machine Configurator Uninstaller"
     echo "==========================================="
     echo
     echo "This will remove:"
-    echo "  - nmc symlinks from /usr/local/bin"
-    echo "  - nmc configuration from shell profiles"
-    echo "  - Installation directory: $NMC_INSTALL_DIR"
+    echo "  - loki symlinks from /usr/local/bin"
+    echo "  - loki configuration from shell profiles"
+    echo "  - Installation directory: $LOKI_INSTALL_DIR"
     echo
     
     read -p "Are you sure you want to continue? [y/N] " -n 1 -r

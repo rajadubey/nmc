@@ -1,18 +1,18 @@
-# NMC — NGINX Machine Configurator (Bash CLI)
+# LOKI — NGINX Machine Configurator (Bash CLI)
 
 ## Overview
 
-`nmc` is a simple command-line tool that helps you manage connections to different servers through your local NGINX. Think of it as a "remote server switcher" that automatically configures NGINX to proxy your local traffic to different remote machines.
+`loki` is a simple command-line tool that helps you manage connections to different servers through your local NGINX. Think of it as a "remote server switcher" that automatically configures NGINX to proxy your local traffic to different remote machines.
 
 ### What This CLI Does (In Simple Words)
 
-Instead of manually editing NGINX configuration files every time you want to switch between different servers (like your home PC, cloud instances, or testing machines), NMC lets you:
+Instead of manually editing NGINX configuration files every time you want to switch between different servers (like your home PC, cloud instances, or testing machines), LOKI lets you:
 - **Switch between servers** with one command
 - **Automatically generate** the proper NGINX configuration
 - **Check if services are working** on your local machine
 - **Keep your server list updated** from remote sources
 
-All configuration is **stored in `~/.nmc`** and can be customized via `.bashrc` or `.zshrc` environment variables.
+All configuration is **stored in `~/.loki`** and can be customized via `.bashrc` or `.zshrc` environment variables.
 
 ---
 
@@ -25,13 +25,13 @@ curl -o- https://raw.githubusercontent.com/rajadubey/nmc/master/install.sh | bas
 
 ```bash
 # Download the script
-curl -fsSL -o ~/.nmc/nmc https://raw.githubusercontent.com/rajadubey/nmc/master/nmc
+curl -fsSL -o ~/.loki/loki https://raw.githubusercontent.com/rajadubey/nmc/master/loki
 
 # Make it executable
-chmod +x ~/.nmc/nmc
+chmod +x ~/.loki/loki
 
 # Create symlink (may require sudo)
-sudo ln -sf ~/.nmc/nmc /usr/local/bin/nmc
+sudo ln -sf ~/.loki/loki /usr/local/bin/loki
 ```
 
 
@@ -56,11 +56,11 @@ sudo apt install jq curl nginx openssh-client
 Define your machines in `.bashrc` or `.zshrc`:
 
 ```bash
-# For 'nmc refetch' - specify which machine to fetch from
-export NMC_SSH_USER="ubuntu"
-export NMC_SSH_HOST="54.123.45.67"
-export NMC_SSH_PORT="22"
-export NMC_REMOTE_MACHINES_JSON="/opt/machines.json"
+# For 'loki refetch' - specify which machine to fetch from
+export LOKI_SSH_USER="ubuntu"
+export LOKI_SSH_HOST="54.123.45.67"
+export LOKI_SSH_PORT="22"
+export LOKI_REMOTE_MACHINES_JSON="/opt/machines.json"
 ```
 
 Reload shell configuration:
@@ -110,51 +110,51 @@ source ~/.zshrc
 ### Basic Commands
 
 ```bash
-nmc init                    # Initialize ~/.nmc directory
-nmc ls                      # List all available machines
-nmc connect aws_machine     # Switch to AWS machine
-nmc status                  # Show active machine and port mappings
-nmc check                   # Test if services are accessible locally
-nmc refresh                 # Regenerate and reload NGINX configuration
-nmc refetch                 # Update machine.json from remote source
-nmc break                   # Break connection from remote machine
+loki init                    # Initialize ~/.loki directory
+loki ls                      # List all available machines
+loki connect aws_machine     # Switch to AWS machine
+loki status                  # Show active machine and port mappings
+loki check                   # Test if services are accessible locally
+loki refresh                 # Regenerate and reload NGINX configuration
+loki refetch                 # Update machine.json from remote source
+loki break                   # Break connection from remote machine
 ```
 
 ### Example Workflow
 
 ```bash
-# 1. Initialize and set up NMC
-nmc init
+# 1. Initialize and set up LOKI
+loki init
 
 # 2. See what machines are available
-nmc ls
+loki ls
 
 # 3. Connect to your home PC
-nmc connect personal_home_pc_ubuntu
+loki connect personal_home_pc_ubuntu
 
 # 4. Check if services are working locally
-nmc check
+loki check
 
 # 5. Update configuration from remote
-nmc refetch
-nmc refresh
+loki refetch
+loki refresh
 
 # 6. Switch to cloud machine
-nmc connect gcp_lowCost_instance
-nmc check
+loki connect gcp_lowCost_instance
+loki check
 
 # 6. Stop/Break this connection
-nmc stop
-nmc check
-nmc status
+loki stop
+loki check
+loki status
 ```
 
 ### Service Health Checking
 
-The `nmc check` command tests all services and shows their HTTP status:
+The `loki check` command tests all services and shows their HTTP status:
 
 ```bash
-$ nmc check
+$ loki check
 🔍 Checking services for aws_free_machine
   web (localhost:8082): Up (HTTP 200)
   api (localhost:8083): Up (HTTP 200)
@@ -165,11 +165,11 @@ $ nmc check
 
 ## How It Works
 
-1. **Configuration Storage**: All data stored in `~/.nmc/`
+1. **Configuration Storage**: All data stored in `~/.loki/`
    - `machine.json` - Server definitions and service mappings
    - `active` - Currently selected machine
    - `remote.conf` - Generated NGINX configuration
-   - `nmc.log` - Operation logs
+   - `loki.log` - Operation logs
 
 2. **NGINX Integration**: Automatically detects NGINX configuration directory and creates `remote.conf` with proper proxy settings
 
@@ -207,7 +207,7 @@ ssh user@hostname "cat /path/to/machines.json"
 
 Check operation logs for detailed debugging:
 ```bash
-tail -f ~/.nmc/nmc.log
+tail -f ~/.loki/loki.log
 ```
 
 ---

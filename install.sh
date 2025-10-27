@@ -2,9 +2,9 @@
 
 { # this ensures the entire script is downloaded #
 
-NMC_INSTALL_DIR="${NMC_DIR:-$HOME/.nmc}"
-NMC_REPO="rajadubey/nmc"
-NMC_RAW_URL="https://raw.githubusercontent.com/$NMC_REPO/master/nmc"
+LOKI_INSTALL_DIR="${LOKI_DIR:-$HOME/.loki}"
+LOKI_REPO="rajadubey/nmc"
+LOKI_RAW_URL="https://raw.githubusercontent.com/$LOKI_REPO/master/loki"
 
 # Colors for output
 RED='\033[0;31m'
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 
 # Logging functions
 log() {
-  echo -e "${BLUE}[nmc]${NC} $1"
+  echo -e "${BLUE}[loki]${NC} $1"
 }
 
 ok() {
@@ -93,38 +93,38 @@ detect_profile() {
   echo "$detected_profile"
 }
 
-# Download nmc script
-download_nmc() {
-  log "Downloading nmc..."
+# Download loki script
+download_loki() {
+  log "Downloading loki..."
   
-  if ! curl -fsSL -o "$NMC_INSTALL_DIR/nmc" "$NMC_RAW_URL"; then
-    fatal "Failed to download nmc from $NMC_RAW_URL"
+  if ! curl -fsSL -o "$LOKI_INSTALL_DIR/loki" "$LOKI_RAW_URL"; then
+    fatal "Failed to download loki from $LOKI_RAW_URL"
   fi
   
-  chmod +x "$NMC_INSTALL_DIR/nmc"
-  ok "Downloaded nmc to $NMC_INSTALL_DIR/nmc"
+  chmod +x "$LOKI_INSTALL_DIR/loki"
+  ok "Downloaded loki to $LOKI_INSTALL_DIR/loki"
 }
 
 # Create symlink
 create_symlink() {
   local symlink_dir="/usr/local/bin"
-  local symlink_path="$symlink_dir/nmc"
+  local symlink_path="$symlink_dir/loki"
   
   # Check if we can write to /usr/local/bin
   if [ ! -w "$symlink_dir" ]; then
     warn "Cannot write to $symlink_dir, need sudo access"
-    if sudo ln -sf "$NMC_INSTALL_DIR/nmc" "$symlink_path" 2>/dev/null; then
-      ok "Created symlink with sudo: $symlink_path -> $NMC_INSTALL_DIR/nmc"
+    if sudo ln -sf "$LOKI_INSTALL_DIR/loki" "$symlink_path" 2>/dev/null; then
+      ok "Created symlink with sudo: $symlink_path -> $LOKI_INSTALL_DIR/loki"
     else
       warn "Failed to create system symlink, using local installation"
       echo "You can manually create a symlink later:"
-      echo "  sudo ln -sf $NMC_INSTALL_DIR/nmc /usr/local/bin/nmc"
-      echo "Or add $NMC_INSTALL_DIR to your PATH"
+      echo "  sudo ln -sf $LOKI_INSTALL_DIR/loki /usr/local/bin/loki"
+      echo "Or add $LOKI_INSTALL_DIR to your PATH"
       return
     fi
   else
-    if ln -sf "$NMC_INSTALL_DIR/nmc" "$symlink_path" 2>/dev/null; then
-      ok "Created symlink: $symlink_path -> $NMC_INSTALL_DIR/nmc"
+    if ln -sf "$LOKI_INSTALL_DIR/loki" "$symlink_path" 2>/dev/null; then
+      ok "Created symlink: $symlink_path -> $LOKI_INSTALL_DIR/loki"
     else
       warn "Failed to create symlink"
     fi
@@ -137,32 +137,32 @@ setup_profile() {
   profile=$(detect_profile)
   
   if [ -z "$profile" ]; then
-    warn "No shell profile found. Please add $NMC_INSTALL_DIR to your PATH manually"
+    warn "No shell profile found. Please add $LOKI_INSTALL_DIR to your PATH manually"
     return
   fi
   
   log "Detected shell profile: $profile"
   
   # Check if already in PATH
-  if echo ":$PATH:" | grep -q ":$NMC_INSTALL_DIR:"; then
-    ok "nmc directory already in PATH"
+  if echo ":$PATH:" | grep -q ":$LOKI_INSTALL_DIR:"; then
+    ok "loki directory already in PATH"
     return
   fi
   
   # Add to PATH in profile
-  if grep -q "NMC_DIR" "$profile" 2>/dev/null; then
-    ok "nmc configuration already exists in $profile"
+  if grep -q "LOKI_DIR" "$profile" 2>/dev/null; then
+    ok "loki configuration already exists in $profile"
     return
   fi
   
   cat >> "$profile" << EOF
 
-# NMC - NGINX Machine Configurator
-export NMC_DIR="$NMC_INSTALL_DIR"
-export PATH="\$NMC_DIR:\$PATH"
+# LOKI - NGINX Machine Configurator
+export LOKI_DIR="$LOKI_INSTALL_DIR"
+export PATH="\$LOKI_DIR:\$PATH"
 EOF
 
-  ok "Added nmc to $profile"
+  ok "Added loki to $profile"
   echo "Please restart your terminal or run: source $profile"
 }
 
@@ -170,44 +170,44 @@ EOF
 verify_installation() {
   log "Verifying installation..."
   
-  if [ ! -f "$NMC_INSTALL_DIR/nmc" ]; then
-    fatal "nmc script not found at $NMC_INSTALL_DIR/nmc"
+  if [ ! -f "$LOKI_INSTALL_DIR/loki" ]; then
+    fatal "loki script not found at $LOKI_INSTALL_DIR/loki"
   fi
   
-  if ! [ -x "$NMC_INSTALL_DIR/nmc" ]; then
-    fatal "nmc script is not executable"
+  if ! [ -x "$LOKI_INSTALL_DIR/loki" ]; then
+    fatal "loki script is not executable"
   fi
   
-  # Test if nmc is available in PATH
-  if command -v nmc >/dev/null 2>&1; then
-    ok "nmc command is available in PATH"
+  # Test if loki is available in PATH
+  if command -v loki >/dev/null 2>&1; then
+    ok "loki command is available in PATH"
   else
-    warn "nmc command not in PATH. Please restart your terminal or add $NMC_INSTALL_DIR to your PATH"
+    warn "loki command not in PATH. Please restart your terminal or add $LOKI_INSTALL_DIR to your PATH"
   fi
   
   # Test basic functionality
-  if "$NMC_INSTALL_DIR/nmc" --version >/dev/null 2>&1; then
-    ok "nmc basic functionality test passed"
+  if "$LOKI_INSTALL_DIR/loki" --version >/dev/null 2>&1; then
+    ok "loki basic functionality test passed"
   else
-    warn "nmc basic functionality test failed"
+    warn "loki basic functionality test failed"
   fi
 }
 
 # Main installation
 main() {
   echo
-  echo -e "${BOLD}NMC - NGINX Machine Configurator Installer${NC}"
+  echo -e "${BOLD}LOKI - NGINX Machine Configurator Installer${NC}"
   echo "=============================================="
   echo
   
-  log "Installation directory: $NMC_INSTALL_DIR"
+  log "Installation directory: $LOKI_INSTALL_DIR"
   
   # Create installation directory
-  if [ ! -d "$NMC_INSTALL_DIR" ]; then
-    mkdir -p "$NMC_INSTALL_DIR" || fatal "Failed to create directory $NMC_INSTALL_DIR"
+  if [ ! -d "$LOKI_INSTALL_DIR" ]; then
+    mkdir -p "$LOKI_INSTALL_DIR" || fatal "Failed to create directory $LOKI_INSTALL_DIR"
     ok "Created installation directory"
   else
-    warn "Installation directory already exists: $NMC_INSTALL_DIR"
+    warn "Installation directory already exists: $LOKI_INSTALL_DIR"
     read -p "Continue with installation? [y/N] " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -218,8 +218,8 @@ main() {
   # Check dependencies
   check_deps
   
-  # Download nmc
-  download_nmc
+  # Download loki
+  download_loki
   
   # Create symlink
   create_symlink
@@ -235,10 +235,10 @@ main() {
   echo
   echo "To get started:"
   echo "  1. Restart your terminal or run: source $(detect_profile)"
-  echo "  2. Run: nmc init"
+  echo "  2. Run: loki init"
   echo "  3. Configure your source machines in ~/.bashrc or ~/.zshrc"
   echo
-  echo "Documentation: https://github.com/$NMC_REPO"
+  echo "Documentation: https://github.com/$LOKI_REPO"
   echo
 }
 
