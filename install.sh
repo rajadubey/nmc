@@ -4,7 +4,7 @@
 
 LOKI_INSTALL_DIR="${LOKI_DIR:-$HOME/.loki}"
 LOKI_REPO="rajadubey/loki"
-LOKI_RAW_URL="https://raw.githubusercontent.com/$LOKI_REPO/1.0.0/loki"
+LOKI_RAW_URL="https://raw.githubusercontent.com/$LOKI_REPO/1.0.1/loki.sh"
 
 # Colors for output
 RED='\033[0;31m'
