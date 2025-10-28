@@ -18,14 +18,14 @@ All configuration is **stored in `~/.loki`** and can be customized via `.bashrc`
 
 ### One-line Install
 ```bash
-curl -o- https://raw.githubusercontent.com/rajadubey/loki/master/install.sh | bash
+curl -o- https://raw.githubusercontent.com/rajadubey/loki/main/install.sh | bash
 ```
 
 ## Installation
 
 ```bash
 # Download the script
-curl -fsSL -o ~/.loki/loki https://raw.githubusercontent.com/rajadubey/loki/master/loki
+curl -fsSL -o ~/.loki/loki https://raw.githubusercontent.com/rajadubey/loki/main/loki.sh
 
 # Make it executable
 chmod +x ~/.loki/loki
