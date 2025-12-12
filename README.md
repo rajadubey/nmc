@@ -208,7 +208,6 @@ ssh user@hostname "cat /path/to/machines.json"
 Check operation logs for detailed debugging:
 ```bash
 tail -f ~/.loki/loki.log
-
 ```
 
 ---
