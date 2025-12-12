@@ -3,6 +3,10 @@
 # ===========================
 # LOKI - NGINX Machine Configurator
 # ===========================
+# Author: @rajadubey
+# Version: 1.0.0
+# License: MIT
+# ===========================
 
 VERSION=1.0.0
 
