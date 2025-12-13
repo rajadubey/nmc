@@ -14,50 +14,24 @@ BLUE='\033[0;34m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
-# Logging functions
-log() {
-  echo -e "${BLUE}[loki]${NC} $1"
-}
+log() { echo -e "${BLUE}[loki]${NC} $1"; }
+ok() { echo -e "${GREEN}✅${NC} $1"; }
+warn() { echo -e "${YELLOW}⚠️${NC} $1"; }
+err() { echo -e "${RED}❌${NC} $1" >&2; }
+fatal() { err "$1"; exit 1; }
 
-ok() {
-  echo -e "${GREEN}✅${NC} $1"
-}
-
-warn() {
-  echo -e "${YELLOW}⚠️${NC} $1"
-}
-
-err() {
-  echo -e "${RED}❌${NC} $1" >&2
-}
-
-fatal() {
-  err "$1"
-  exit 1
-}
-
-# Check dependencies
 check_deps() {
-  local deps=("curl" "jq")
-  local missing=()
+  local deps=("curl" "jq") missing=()
   
   for dep in "${deps[@]}"; do
-    if ! command -v "$dep" >/dev/null 2>&1; then
-      missing+=("$dep")
-    fi
+    command -v "$dep" >/dev/null 2>&1 || missing+=("$dep")
   done
   
   if [ ${#missing[@]} -gt 0 ]; then
-    warn "Missing dependencies: ${missing[*]}"
-    echo "Please install them using your package manager:"
-    echo "  macOS: brew install ${missing[*]}"
-    echo "  Ubuntu/Debian: sudo apt install ${missing[*]}"
+    warn "Missing: ${missing[*]} (install with: brew install ${missing[*]})"
+    read -p "Continue? [y/N] " -n 1 -r
     echo
-    read -p "Continue anyway? [y/N] " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-      fatal "Installation aborted"
-    fi
+    [[ $REPLY =~ ^[Yy]$ ]] || fatal "Installation aborted"
   fi
 }
 
@@ -93,67 +67,30 @@ detect_profile() {
   echo "$detected_profile"
 }
 
-# Download loki script
 download_loki() {
-  log "Downloading loki..."
-  
-  if ! curl -fsSL -o "$LOKI_INSTALL_DIR/loki" "$LOKI_RAW_URL"; then
-    fatal "Failed to download loki from $LOKI_RAW_URL"
-  fi
-  
+  curl -fsSL -o "$LOKI_INSTALL_DIR/loki" "$LOKI_RAW_URL" || fatal "Download failed"
   chmod +x "$LOKI_INSTALL_DIR/loki"
-  ok "Downloaded loki to $LOKI_INSTALL_DIR/loki"
+  ok "Downloaded loki"
 }
 
-# Create symlink
 create_symlink() {
-  local symlink_dir="/usr/local/bin"
-  local symlink_path="$symlink_dir/loki"
+  local symlink_path="/usr/local/bin/loki"
   
-  # Check if we can write to /usr/local/bin
-  if [ ! -w "$symlink_dir" ]; then
-    warn "Cannot write to $symlink_dir, need sudo access"
-    if sudo ln -sf "$LOKI_INSTALL_DIR/loki" "$symlink_path" 2>/dev/null; then
-      ok "Created symlink with sudo: $symlink_path -> $LOKI_INSTALL_DIR/loki"
-    else
-      warn "Failed to create system symlink, using local installation"
-      echo "You can manually create a symlink later:"
-      echo "  sudo ln -sf $LOKI_INSTALL_DIR/loki /usr/local/bin/loki"
-      echo "Or add $LOKI_INSTALL_DIR to your PATH"
-      return
-    fi
+  if [ -w "/usr/local/bin" ]; then
+    ln -sf "$LOKI_INSTALL_DIR/loki" "$symlink_path" && ok "Created symlink"
   else
-    if ln -sf "$LOKI_INSTALL_DIR/loki" "$symlink_path" 2>/dev/null; then
-      ok "Created symlink: $symlink_path -> $LOKI_INSTALL_DIR/loki"
-    else
-      warn "Failed to create symlink"
-    fi
+    sudo ln -sf "$LOKI_INSTALL_DIR/loki" "$symlink_path" 2>/dev/null && ok "Created symlink" || warn "Symlink failed"
   fi
 }
 
-# Setup shell profile
 setup_profile() {
   local profile
   profile=$(detect_profile)
   
-  if [ -z "$profile" ]; then
-    warn "No shell profile found. Please add $LOKI_INSTALL_DIR to your PATH manually"
-    return
-  fi
+  [ -z "$profile" ] && { warn "No shell profile found"; return; }
   
-  log "Detected shell profile: $profile"
-  
-  # Check if already in PATH
-  if echo ":$PATH:" | grep -q ":$LOKI_INSTALL_DIR:"; then
-    ok "loki directory already in PATH"
-    return
-  fi
-  
-  # Add to PATH in profile
-  if grep -q "LOKI_DIR" "$profile" 2>/dev/null; then
-    ok "loki configuration already exists in $profile"
-    return
-  fi
+  echo ":$PATH:" | grep -q ":$LOKI_INSTALL_DIR:" && { ok "Already in PATH"; return; }
+  grep -q "LOKI_DIR" "$profile" 2>/dev/null && { ok "Already configured"; return; }
   
   cat >> "$profile" << EOF
 
@@ -162,84 +99,37 @@ export LOKI_DIR="$LOKI_INSTALL_DIR"
 export PATH="\$LOKI_DIR:\$PATH"
 EOF
 
-  ok "Added loki to $profile"
-  echo "Please restart your terminal or run: source $profile"
+  ok "Added to $profile"
 }
 
-# Verify installation
 verify_installation() {
-  log "Verifying installation..."
+  [ -f "$LOKI_INSTALL_DIR/loki" ] || fatal "Installation failed"
+  [ -x "$LOKI_INSTALL_DIR/loki" ] || fatal "Script not executable"
   
-  if [ ! -f "$LOKI_INSTALL_DIR/loki" ]; then
-    fatal "loki script not found at $LOKI_INSTALL_DIR/loki"
-  fi
-  
-  if ! [ -x "$LOKI_INSTALL_DIR/loki" ]; then
-    fatal "loki script is not executable"
-  fi
-  
-  # Test if loki is available in PATH
-  if command -v loki >/dev/null 2>&1; then
-    ok "loki command is available in PATH"
-  else
-    warn "loki command not in PATH. Please restart your terminal or add $LOKI_INSTALL_DIR to your PATH"
-  fi
-  
-  # Test basic functionality
-  if "$LOKI_INSTALL_DIR/loki" --version >/dev/null 2>&1; then
-    ok "loki basic functionality test passed"
-  else
-    warn "loki basic functionality test failed"
-  fi
+  command -v loki >/dev/null 2>&1 && ok "Available in PATH" || warn "Restart terminal"
 }
 
-# Main installation
 main() {
-  echo
-  echo -e "${BOLD}LOKI - NGINX Machine Configurator Installer${NC}"
-  echo "=============================================="
-  echo
+  echo -e "${BOLD}LOKI Installer${NC}"
+  echo "==============="
   
-  log "Installation directory: $LOKI_INSTALL_DIR"
-  
-  # Create installation directory
-  if [ ! -d "$LOKI_INSTALL_DIR" ]; then
-    mkdir -p "$LOKI_INSTALL_DIR" || fatal "Failed to create directory $LOKI_INSTALL_DIR"
-    ok "Created installation directory"
-  else
-    warn "Installation directory already exists: $LOKI_INSTALL_DIR"
-    read -p "Continue with installation? [y/N] " -n 1 -r
+  if [ -d "$LOKI_INSTALL_DIR" ]; then
+    read -p "Directory exists. Continue? [y/N] " -n 1 -r
     echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-      fatal "Installation aborted"
-    fi
+    [[ $REPLY =~ ^[Yy]$ ]] || fatal "Aborted"
+  else
+    mkdir -p "$LOKI_INSTALL_DIR" || fatal "Failed to create directory"
   fi
   
-  # Check dependencies
   check_deps
-  
-  # Download loki
   download_loki
-  
-  # Create symlink
   create_symlink
-  
-  # Setup shell profile
   setup_profile
-  
-  # Verify installation
   verify_installation
   
   echo
-  echo -e "${GREEN}${BOLD}Installation complete!${NC}"
-  echo
-  echo "To get started:"
-  echo "  1. Restart your terminal or run: source $(detect_profile)"
-  echo "  2. Run: loki init"
-  echo "  3. Configure your source machines in ~/.bashrc or ~/.zshrc"
-  echo
-  echo "Documentation: https://github.com/$LOKI_REPO"
-  echo
+  ok "Installation complete!"
+  echo "Run: loki init"
 }
 
 # Run main function
