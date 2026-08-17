@@ -4,7 +4,7 @@
 # LOKI - NGINX Machine Configurator
 # ===========================
 
-VERSION=1.0.0
+VERSION=1.0.2
 
 LOKI_HOME="$HOME/.loki"
 CONF_PATH="$LOKI_HOME/machine.json"
@@ -66,6 +66,23 @@ detect_nginx_conf_dir() {
   done
   
   err "Could not detect nginx conf.d directory"
+  return 1
+}
+
+# Reload nginx; if no master is running (or reload fails), stop any stragglers
+# and start fresh. Waits for listen sockets to free before retrying.
+reload_nginx() {
+  sudo nginx -s reload 2>/dev/null && return 0
+
+  log "Reload failed, restarting nginx..."
+  sudo pkill -x nginx 2>/dev/null || true
+
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    sudo nginx 2>/dev/null && return 0
+    # already back up (launchd/brew services respawned it) with our config loaded
+    pgrep -x nginx >/dev/null && sudo nginx -s reload 2>/dev/null && return 0
+    sleep 1
+  done
   return 1
 }
 
@@ -174,7 +191,7 @@ cmd_connect() {
     
     # Restart nginx and test again
     log "Reloading nginx..."
-    if sudo nginx -s reload; then
+    if reload_nginx; then
       log "Nginx reload successful"
     else
       err "Nginx reload failed"
@@ -306,7 +323,7 @@ cmd_refresh() {
     exit 1
   fi
   
-  sudo nginx -s reload >/dev/null 2>&1
+  reload_nginx >/dev/null 2>&1 || err "Nginx reload failed"
   ok "✅ Reloaded NGINX with new config for $active"
 }
 
